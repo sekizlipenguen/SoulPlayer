@@ -223,11 +223,41 @@ const VideoPlayer = ({videoUrl}) => {
             style={[styles.controlsContainer, {opacity: fadeAnim}]}
             pointerEvents={showControls ? 'auto' : 'none'}
         >
+          {
+              isVolumeBarVisible && (
+                  <View
+                      style={[
+                        styles.volumeSliderContainer,
+                        {
+                          left: volumeBarPosition.left,
+                          bottom: volumeBarPosition.bottom,
+                          zIndex: 2,
+                        },
+                      ]}
+                  >
+                    <View style={styles.volumeBackground}/>
+                    <Slider
+                        style={styles.volumeSlider}
+                        minimumValue={0}
+                        maximumValue={1}
+                        value={volume}
+                        onValueChange={(value) => {
+                          setVolume(value);
+                          resetHideTimer();
+                        }}
+                        minimumTrackTintColor="#00ff00"
+                        maximumTrackTintColor="#fff"
+                        thumbTintColor="#00ff00"
+                    />
+                  </View>
+              )
+          }
           <LinearGradient
               colors={['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0.7)']}
               style={{
                 paddingBottom: 15,
                 paddingTop: 15,
+                zIndex: 1,
               }}
           >
             <Slider
@@ -240,35 +270,6 @@ const VideoPlayer = ({videoUrl}) => {
                 maximumTrackTintColor="#fff"
                 thumbTintColor="#00ff00"
             />
-
-            {
-                isVolumeBarVisible && (
-                    <View
-                        style={[
-                          styles.volumeSliderContainer,
-                          {
-                            left: volumeBarPosition.left,
-                            bottom: volumeBarPosition.bottom,
-                          },
-                        ]}
-                    >
-                      <View style={styles.volumeBackground}/>
-                      <Slider
-                          style={styles.volumeSlider}
-                          minimumValue={0}
-                          maximumValue={1}
-                          value={volume}
-                          onValueChange={(value) => {
-                            setVolume(value);
-                            resetHideTimer();
-                          }}
-                          minimumTrackTintColor="#00ff00"
-                          maximumTrackTintColor="#fff"
-                          thumbTintColor="#00ff00"
-                      />
-                    </View>
-                )
-            }
 
             <View style={styles.controls}>
               <TouchableOpacity
