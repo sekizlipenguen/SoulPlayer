@@ -1,0 +1,19 @@
+{
+  "name": "@sekizlipenguen/react-native-soul-player",
+  "version": "1.0.0",
+  "description": "React Native Soul Player - A customizable and feature-rich video player for React Native apps.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sekizlipenguen/react-native-soul-player.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sekizlipenguen/react-native-soul-player/issues"
+  },
+  "homepage": "https://github.com/sekizlipenguen/react-native-soul-player#readme"
+}
