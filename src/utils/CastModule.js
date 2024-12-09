@@ -1,19 +1,29 @@
-import {NativeModules} from 'react-native';
+import {NativeEventEmitter, NativeModules} from 'react-native';
 
 const {CastModule} = NativeModules;
+const eventEmitter = new NativeEventEmitter(CastModule);
 
-export const startCasting = (url, title = 'Video', subtitle = '') => {
-  return CastModule.startCasting(url, title, subtitle);
-};
+// Olayları dinleme
+const startListener = eventEmitter.addListener('onCastStart', () => {
+  console.log('Casting started');
+});
 
-export const stopCasting = () => {
-  return CastModule.stopCasting();
-};
+const stopListener = eventEmitter.addListener('onCastStop', () => {
+  console.log('Casting stopped');
+});
 
-export const seekTo = (seconds) => {
-  return CastModule.seekTo(seconds);
-};
+// AirPlay ile casting başlatma
+CastModule.startCastingWithAirPlay(
+    () => console.log('AirPlay casting started successfully'),
+    (error) => console.error('Casting error:', error),
+);
 
-export const setPlaybackRate = (rate) => {
-  return CastModule.setPlaybackRate(rate);
-};
+// Casting durdurma
+CastModule.stopCasting(
+    () => console.log('Casting stopped successfully'),
+    (error) => console.error('Casting stop error:', error),
+);
+
+// Unmount sırasında dinleyicileri kaldır
+startListener.remove();
+stopListener.remove();

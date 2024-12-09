@@ -4,7 +4,10 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import {getStatusBarHeight, useStateWithCallback} from '../utils/Helper';
 import Orientation from 'react-native-orientation-locker';
 import LinearGradient from 'react-native-linear-gradient';
-import AirPlay from 'react-native-airplay';
+import {NativeEventEmitter, NativeModules} from 'react-native';
+
+const {CastModule} = NativeModules;
+const eventEmitter = new NativeEventEmitter(CastModule);
 
 const TopBar = ({onResetHideTimer, onFullScreen, videoUrl, currentTime}) => {
 
@@ -21,12 +24,11 @@ const TopBar = ({onResetHideTimer, onFullScreen, videoUrl, currentTime}) => {
   };
 
   const onCast = () => {
-    // AirPlay'i tetikle
-    AirPlay.startScan().then(() => {
-      console.log('AirPlay başlatıldı');
-    }).catch((err) => {
-      console.error('AirPlay Hatası:', err);
-    });
+    CastModule.showAirPlayPickerDirectly(
+        () => console.log('AirPlay picker displayed successfully'),
+        (error) => console.error('Error displaying AirPlay picker:', error),
+    );
+    console.log('CastModule');
   };
 
   useEffect(() => {

@@ -1,16 +1,30 @@
+require "json"
+
+package = JSON.parse(File.read(File.join(__dir__, "package.json")))
+
 Pod::Spec.new do |s|
-  s.name         = "react-native-soul-player"
-  s.version      = "1.0.0"
-  s.summary      = "A custom React Native video player with casting functionality"
-  s.description  = <<-DESC
-                   Soul Player: A React Native custom video player with features like AirPlay, Chromecast, and advanced media controls.
-                   DESC
-  s.homepage     = "https://github.com/yourname/react-native-soul-player"
-  s.license      = "MIT"
-  s.author       = { "SekizliPenguen" => "https://github.com/sekizlipenguen/react-native-soul-player" }
-  s.platform     = :ios, "10.0"
-  s.source       = { :git => "https://github.com/yourname/react-native-soul-player.git", :tag => "#{s.version}" }
-  s.source_files = "ios/**/*.{h,m,swift}"
-  s.requires_arc = true
-  s.dependency 'React-Core'
+  s.name           = "react-native-soul-player"
+  s.version        = package["version"]
+  s.summary        = package["description"]
+  s.description    = package["description"]
+  s.license        = package["license"]
+  s.author         = package["author"]
+  s.homepage       = package["homepage"]
+  s.source         = { :git => "https://github.com/sekizlipenguen/react-native-soul-player.git", :tag => "v#{s.version}" }
+  s.platforms      = { :ios => "11.0" }
+
+  # Kaynak dosyalar
+  s.source_files   = "ios/**/*.{h,m,swift}"
+
+  # React Native Bağımlılıkları
+  s.dependency "React"
+  s.dependency "React-Core"
+  s.dependency "React-RCTNetwork"
+  s.dependency "React-Codegen"
+  s.dependency "RCT-Folly"
+  s.dependency "RCTRequired"
+  s.dependency "RCTTypeSafety"
+  s.dependency "ReactCommon/turbomodule/core"
+  # Frameworkler
+  s.frameworks = ["AVKit", "MediaPlayer"]
 end

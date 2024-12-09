@@ -1,9 +1,7 @@
 module.exports = {
   dependency: {
     platforms: {
-      ios: {
-        podspecPath: 'react-native-soul-player.podspec', // iOS için podspec dosyası
-      },
+      ios: {}, // iOS için otomatik bağlantı
       android: {
         packageInstance: 'new CastPackage()', // Android modülü
       },

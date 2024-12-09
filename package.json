@@ -2,7 +2,7 @@
   "name": "@sekizlipenguen/react-native-soul-player",
   "version": "1.0.0",
   "description": "React Native Soul Player - A customizable and feature-rich video player for React Native apps.",
-  "main": "index.js",
+  "main": "src/components/VideoPlayer.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
