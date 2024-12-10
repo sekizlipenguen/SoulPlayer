@@ -145,49 +145,55 @@ const SettingsMenu = ({visible, onClose, playbackRate, onSpeedChange, videoUrl, 
               ))}
             </View>
 
-            {/* Kalite Seçenekleri */}
-            <Text style={styles.settingsTitle}>Görüntü Kalitesi</Text>
-            <View style={styles.qualityContainer}>
-              {/* Önerilen Butonu */}
-              <TouchableOpacity
-                  style={[
-                    styles.qualityButton,
-                    selectedQuality === 'recommended' && styles.selectedQualityButton,
-                  ]}
-                  onPress={() => handleQualitySelect('recommended')}
-              >
-                <Text
-                    style={[
-                      styles.qualityText,
-                      selectedQuality === 'recommended' && styles.selectedQualityText,
-                    ]}
-                >
-                  Önerilen
-                </Text>
-              </TouchableOpacity>
+            {
+                qualities && qualities.length > 0 && (
+                    <Text style={styles.settingsTitle}>Görüntü Kalitesi</Text>
+                )
+            }
+            {
+                qualities && qualities.length > 0 && (
+                    <View style={styles.qualityContainer}>
+                      {/* Önerilen Butonu */}
+                      <TouchableOpacity
+                          style={[
+                            styles.qualityButton,
+                            selectedQuality === 'recommended' && styles.selectedQualityButton,
+                          ]}
+                          onPress={() => handleQualitySelect('recommended')}
+                      >
+                        <Text
+                            style={[
+                              styles.qualityText,
+                              selectedQuality === 'recommended' && styles.selectedQualityText,
+                            ]}
+                        >
+                          Önerilen
+                        </Text>
+                      </TouchableOpacity>
 
-              {/* Diğer Kalite Butonları */}
-              {qualities.map((item) => (
-                  <TouchableOpacity
-                      key={item.url}
-                      style={[
-                        styles.qualityButton,
-                        selectedQuality.resolution === item.resolution && styles.selectedQualityButton,
-                      ]}
-                      onPress={() => handleQualitySelect(item)}
-                  >
-                    <Text
-                        style={[
-                          styles.qualityText,
-                          selectedQuality?.resolution === item.resolution && styles.selectedQualityText,
-                        ]}
-                    >
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
-              ))}
-            </View>
-
+                      {/* Diğer Kalite Butonları */}
+                      {qualities.map((item) => (
+                          <TouchableOpacity
+                              key={item.url}
+                              style={[
+                                styles.qualityButton,
+                                selectedQuality.resolution === item.resolution && styles.selectedQualityButton,
+                              ]}
+                              onPress={() => handleQualitySelect(item)}
+                          >
+                            <Text
+                                style={[
+                                  styles.qualityText,
+                                  selectedQuality?.resolution === item.resolution && styles.selectedQualityText,
+                                ]}
+                            >
+                              {item.label}
+                            </Text>
+                          </TouchableOpacity>
+                      ))}
+                    </View>
+                )
+            }
             {/* Menüyü Kapatma */}
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Text style={styles.closeText}>Kapat</Text>
