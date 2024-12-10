@@ -8,12 +8,25 @@ import {useStateWithCallback} from '../utils/Helper';
 import TopBar from './TopBar';
 import LinearGradient from 'react-native-linear-gradient';
 
-const SoulPlayer = ({videoUrl}) => {
+const SoulPlayer = ({
+  videoUrl,
+  onLoadStart,
+  onError,
+  onEnd,
+  onSeek,
+  onProgress,
+  onLoad,
+  onMuteToggle,
+  onQualityChange,
+  onFullScreen,
+  onPlay,
+  onPause,
+}) => {
   const videoRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const volumeIconRef = useRef(null);
 
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useStateWithCallback(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useStateWithCallback(true);
   const [currentTime, setCurrentTime] = useStateWithCallback(0);
@@ -36,13 +49,27 @@ const SoulPlayer = ({videoUrl}) => {
   const screenWidth = Dimensions.get('window').width;
 
   const togglePlayPause = () => {
+    const newPlayingState = !isPlaying;
     resetHideTimer();
-    setIsPlaying(!isPlaying);
+    setIsPlaying(newPlayingState, () => {
+      // onPlay veya onPause tetikle
+      if (newPlayingState && onPlay) {
+        onPlay(currentTime);
+      } else if (!newPlayingState && onPause) {
+        onPause(currentTime);
+      }
+    });
+
   };
 
   const toggleMute = () => {
     resetHideTimer();
-    setIsMuted(!isMuted);
+    const newMutedState = !isMuted;
+    setIsMuted(newMutedState);
+
+    if (onMuteToggle) {
+      onMuteToggle(newMutedState);
+    }
   };
 
   const formatTime = (time) => {
@@ -53,12 +80,19 @@ const SoulPlayer = ({videoUrl}) => {
 
   const handleProgress = (progress) => {
     setCurrentTime(progress.currentTime);
+    if (onProgress) {
+      onProgress(progress);
+    }
   };
 
   const handleLoad = (data) => {
     setIsLoading(false, () => {
       setDuration(data.duration);
     });
+    if (onLoad) {
+      onLoad(data);
+    }
+
   };
 
   const handleSeek = (value) => {
@@ -147,17 +181,15 @@ const SoulPlayer = ({videoUrl}) => {
         const bandwidth = itemQuality?.bandwidth ?? 0;
         setSelectedMaxBitRate(parseInt(bandwidth), () => {
           setTimeout(() => {
-            console.log('Video yeniden yükleniyor, seek uygulanıyor:', currentTime);
             videoRef.current.seek(currentTime);
             setIsLoading(false);
+            if (onQualityChange) {
+              onQualityChange(itemQuality, audioTracks);
+            }
           }, 300); // 300ms gecikme ile seek yap
         });
       });
     });
-  };
-
-  const onFullScreen = (is) => {
-    setIsFullscreen(is);
   };
 
   useEffect(() => {
@@ -185,10 +217,15 @@ const SoulPlayer = ({videoUrl}) => {
         >
           <TopBar
               onResetHideTimer={resetHideTimer}
-              onFullScreen={onFullScreen}
+              onFullScreen={(status) => {
+                setIsFullscreen(status, () => {
+                  if (onFullScreen) {
+                    onFullScreen(status);
+                  }
+                });
+              }}
               videoUrl={videoUrl}
               currentTime={currentTime}
-
           />
         </Animated.View>
 
@@ -206,6 +243,10 @@ const SoulPlayer = ({videoUrl}) => {
             selectedAudioTrack={selectedAudioTrack}
             maxBitRate={selectedMaxBitRate}
             key={key}
+            onLoadStart={() => onLoadStart && onLoadStart()}
+            onError={(error) => onError && onError(error)}
+            onEnd={() => onEnd && onEnd()}
+            onSeek={(event) => onSeek && onSeek(event.seekTime)}
         />
 
         {
