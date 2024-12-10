@@ -24,11 +24,30 @@ const TopBar = ({onResetHideTimer, onFullScreen, videoUrl, currentTime}) => {
   };
 
   const onCast = () => {
-    CastModule.showAirPlayPickerDirectly(
-        () => console.log('AirPlay picker displayed successfully'),
-        (error) => console.error('Error displaying AirPlay picker:', error),
-    );
-    console.log('CastModule');
+    if (Platform.OS === 'ios') {
+      // iOS için AirPlay picker'ı çağır
+      if (CastModule.showAirPlayPickerDirectly) {
+        CastModule.showAirPlayPickerDirectly(
+            () => console.log('AirPlay picker displayed successfully on iOS'),
+            (error) => console.error('Error displaying AirPlay picker on iOS:', error),
+        );
+      } else {
+        console.error('showAirPlayPickerDirectly method is not defined on iOS');
+      }
+    } else if (Platform.OS === 'android') {
+      // Android için casting başlat
+      if (CastModule.showCastPicker) {
+        CastModule.showCastPicker(
+            () => console.log('Casting started successfully on Android'),
+            (error) => console.error('Error starting casting on Android:', error),
+        );
+      } else {
+        console.error('startCasting method is not defined on Android');
+      }
+    } else {
+      console.error('Unsupported platform');
+    }
+    console.log('CastModule executed');
   };
 
   useEffect(() => {

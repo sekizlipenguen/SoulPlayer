@@ -3,7 +3,7 @@ module.exports = {
     platforms: {
       ios: {}, // iOS için otomatik bağlantı
       android: {
-        packageInstance: 'new CastPackage()', // Android modülü
+        sourceDir: './android', // Android modül yolu
       },
     },
   },
