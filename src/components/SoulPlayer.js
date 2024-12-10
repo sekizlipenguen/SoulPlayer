@@ -8,7 +8,7 @@ import {useStateWithCallback} from '../utils/Helper';
 import TopBar from './TopBar';
 import LinearGradient from 'react-native-linear-gradient';
 
-const VideoPlayer = ({videoUrl}) => {
+const SoulPlayer = ({videoUrl}) => {
   const videoRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const volumeIconRef = useRef(null);
@@ -26,6 +26,8 @@ const VideoPlayer = ({videoUrl}) => {
 
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [isSettingsVisible, setIsSettingsVisible] = useStateWithCallback(false);
+
+  const [isFullscreen, setIsFullscreen] = useStateWithCallback(false);
 
   const [selectedMaxBitRate, setSelectedMaxBitRate] = useStateWithCallback(0); // Varsayılan çözünürlük
   const [selectedAudioTrack, setSelectedAudioTrack] = useState(null); // Varsayılan ses parçası
@@ -54,7 +56,6 @@ const VideoPlayer = ({videoUrl}) => {
   };
 
   const handleLoad = (data) => {
-    console.log('onload', data);
     setIsLoading(false, () => {
       setDuration(data.duration);
     });
@@ -86,8 +87,6 @@ const VideoPlayer = ({videoUrl}) => {
   };
 
   const resetHideTimer = () => {
-    console.log('resetHideTimer çağrıldı');
-
     if (hideTimeout) {
       clearTimeout(hideTimeout); // Mevcut zamanlayıcıyı temizle
     }
@@ -99,19 +98,16 @@ const VideoPlayer = ({videoUrl}) => {
           duration: 300,
           useNativeDriver: true,
         }).start(() => {
-          console.log('Animasyon tamamlandı, kontroller gizlendi');
           setShowControls(false); // Kontrolleri kapat
         });
       }
     }, 3000);
 
     setHideTimeout(timer);
-    console.log('Yeni timer ayarlandı:', timer);
   };
 
   const toggleControls = () => {
     if (showControls) {
-      console.log('Kontroller zaten açık, gizleniyor');
       Animated.timing(fadeAnim, {
         toValue: 0, // Opaklığı 0 yap
         duration: 300,
@@ -120,7 +116,6 @@ const VideoPlayer = ({videoUrl}) => {
         setShowControls(false); // Kontrolleri kapat
       });
     } else {
-      console.log('Kontroller gizli, açılıyor');
       setShowControls(true); // Kontrolleri aç
       Animated.timing(fadeAnim, {
         toValue: 1, // Opaklığı 1 yap
@@ -161,8 +156,8 @@ const VideoPlayer = ({videoUrl}) => {
     });
   };
 
-  const onFullScreen = (isFullScreen) => {
-    console.log('isFullScreen', isFullScreen);
+  const onFullScreen = (is) => {
+    setIsFullscreen(is);
   };
 
   useEffect(() => {
@@ -231,7 +226,8 @@ const VideoPlayer = ({videoUrl}) => {
                         {
                           left: volumeBarPosition.left,
                           bottom: volumeBarPosition.bottom,
-                          zIndex: 2,
+                          zIndex: 3,
+                          elevation: 5, // Android için
                         },
                       ]}
                   >
@@ -255,7 +251,7 @@ const VideoPlayer = ({videoUrl}) => {
           <LinearGradient
               colors={['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0.7)']}
               style={{
-                paddingBottom: 15,
+                paddingBottom: isFullscreen ? 30 : 15,
                 paddingTop: 15,
                 zIndex: 1,
               }}
@@ -391,5 +387,5 @@ const styles = StyleSheet.create({
 
 });
 
-export default VideoPlayer;
+export default SoulPlayer;
 

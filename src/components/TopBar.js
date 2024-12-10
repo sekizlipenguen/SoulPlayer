@@ -1,20 +1,20 @@
 import React, {useEffect} from 'react';
-import {Dimensions, StyleSheet, Text, TouchableOpacity} from 'react-native';
+import {Dimensions, StatusBar, StyleSheet, Text, TouchableOpacity} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {getStatusBarHeight, useStateWithCallback} from '../utils/Helper';
 import Orientation from 'react-native-orientation-locker';
 import LinearGradient from 'react-native-linear-gradient';
-import {NativeEventEmitter, NativeModules} from 'react-native';
+import {NativeModules} from 'react-native';
 
 const {CastModule} = NativeModules;
-const eventEmitter = new NativeEventEmitter(CastModule);
 
-const TopBar = ({onResetHideTimer, onFullScreen, videoUrl, currentTime}) => {
+const TopBar = ({onResetHideTimer, onFullScreen}) => {
 
   const [screenWidth, setScreenWidth] = useStateWithCallback(Dimensions.get('window').width);
   const [isFullscreen, setIsFullscreen] = useStateWithCallback(false);
 
   const enterFullscreen = (status) => {
+    StatusBar.setHidden(status, 'slide');
     if (status) {
       Orientation.lockToLandscape(); // Yatay moda geçiş
     } else {
