@@ -1,10 +1,10 @@
 import React, {useEffect} from 'react';
-import {Dimensions, StatusBar, StyleSheet, Text, TouchableOpacity} from 'react-native';
+import {Dimensions, NativeModules, StatusBar, StyleSheet, Text, TouchableOpacity} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {getStatusBarHeight, useStateWithCallback} from '../utils/Helper';
 import Orientation from 'react-native-orientation-locker';
 import LinearGradient from 'react-native-linear-gradient';
-import {NativeModules} from 'react-native';
+import CastDeviceModal from '@sekizlipenguen/react-native-soul-player/src/components/CastDeviceModal';
 
 const {CastModule} = NativeModules;
 
@@ -12,6 +12,8 @@ const TopBar = ({onResetHideTimer, onFullScreen}) => {
 
   const [screenWidth, setScreenWidth] = useStateWithCallback(Dimensions.get('window').width);
   const [isFullscreen, setIsFullscreen] = useStateWithCallback(false);
+  const [isCastModalVisible, setCastModalVisible] = useStateWithCallback(false);
+
 
   const enterFullscreen = (status) => {
     StatusBar.setHidden(status, 'slide');
@@ -35,20 +37,13 @@ const TopBar = ({onResetHideTimer, onFullScreen}) => {
         console.error('showAirPlayPickerDirectly method is not defined on iOS');
       }
     } else if (Platform.OS === 'android') {
-      // Android için casting başlat
-      if (CastModule.showCastPicker) {
-        CastModule.showCastPicker(
-            () => console.log('Casting started successfully on Android'),
-            (error) => console.error('Error starting casting on Android:', error),
-        );
-      } else {
-        console.error('startCasting method is not defined on Android');
-      }
+      setCastModalVisible(true);
     } else {
       console.error('Unsupported platform');
     }
-    console.log('CastModule executed');
   };
+
+  const closeCastModal = () => setCastModalVisible(false);
 
   useEffect(() => {
     const updateDimensions = () => {
@@ -62,6 +57,7 @@ const TopBar = ({onResetHideTimer, onFullScreen}) => {
   }, []);
 
   return (
+      <>
       <LinearGradient
           colors={['rgba(0, 0, 0, 0.7)', 'rgba(0, 0, 0, 0)']}
           style={[styles.container, {width: screenWidth, paddingTop: isFullscreen ? 20 : getStatusBarHeight()}]}
@@ -87,6 +83,13 @@ const TopBar = ({onResetHideTimer, onFullScreen}) => {
           <Text style={styles.buttonText}>Tam Ekran</Text>
         </TouchableOpacity>
       </LinearGradient>
+        <CastDeviceModal
+            visible={isCastModalVisible}
+            onClose={closeCastModal}
+            isFullscreen={isFullscreen}
+        />
+
+      </>
   );
 };
 
