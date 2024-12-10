@@ -32,21 +32,28 @@ RCT_EXPORT_METHOD(showAirPlayPickerDirectly:(RCTResponseSenderBlock)successCallb
                   errorCallback:(RCTResponseSenderBlock)errorCallback)
 {
   dispatch_async(dispatch_get_main_queue(), ^{
-    if (!self.routePickerView) {
-      // AVRoutePickerView oluştur
-      self.routePickerView = [[AVRoutePickerView alloc] init];
-      self.routePickerView.activeTintColor = [UIColor blueColor];
-      self.routePickerView.tintColor = [UIColor grayColor];
-      self.routePickerView.prioritizesVideoDevices = YES;
+    UIWindow *keyWindow = [UIApplication sharedApplication].keyWindow;
+    if (!keyWindow) {
+      errorCallback(@[@"No key window available"]);
+      return;
+    }
 
-      // AirPlay butonunu otomatik tetikle
-      for (UIView *subview in self.routePickerView.subviews) {
-        if ([subview isKindOfClass:[UIButton class]]) {
-          UIButton *airplayButton = (UIButton *)subview;
-          [airplayButton sendActionsForControlEvents:UIControlEventTouchUpInside];
-          successCallback(@[@"AirPlay picker opened directly"]);
-          return;
-        }
+    // Yeni bir AVRoutePickerView oluştur
+    self.routePickerView = [[AVRoutePickerView alloc] init];
+    self.routePickerView.activeTintColor = [UIColor blueColor];
+    self.routePickerView.tintColor = [UIColor grayColor];
+    self.routePickerView.prioritizesVideoDevices = YES;
+
+    // Picker'ı key window'un bir alt görünümüne ekle
+    [keyWindow addSubview:self.routePickerView];
+
+    // AirPlay butonunu otomatik tetikle
+    for (UIView *subview in self.routePickerView.subviews) {
+      if ([subview isKindOfClass:[UIButton class]]) {
+        UIButton *airplayButton = (UIButton *)subview;
+        [airplayButton sendActionsForControlEvents:UIControlEventTouchUpInside];
+        successCallback(@[@"AirPlay picker opened directly"]);
+        return;
       }
     }
     errorCallback(@[@"Failed to open AirPlay picker"]);
