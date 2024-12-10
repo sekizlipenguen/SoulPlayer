@@ -47,6 +47,7 @@ const TopBar = ({onResetHideTimer, onFullScreen}) => {
     } else {
       console.error('Unsupported platform');
     }
+    console.log('CastModule executed');
   };
 
   useEffect(() => {
