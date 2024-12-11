@@ -44,6 +44,8 @@ repositories {
 }
 
 dependencies {
+    implementation 'com.android.support:appcompat-v7:25.0.0'
+    implementation 'com.android.support:mediarouter-v7:25.0.0'
     implementation 'com.google.android.gms:play-services-cast-framework:21.4.0'
     implementation 'com.facebook.react:react-native:+'
 }

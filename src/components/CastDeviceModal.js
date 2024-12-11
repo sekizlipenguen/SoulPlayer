@@ -43,7 +43,8 @@ const CastDeviceModal = ({visible, onClose, isFullscreen}) => {
   const fetchDevices = () => {
     setLoading(true);
     if (Platform.OS === 'android') {
-      CastModule.getAvailableRoutes().then((routes) => {
+      CastModule.scanForCastDevices().then((routes) => {
+        console.log('rout', routes);
         const parsedRoutes = JSON.parse(routes);
         setDevices(parsedRoutes);
       }).catch((error) => console.error('Error getting routes:', error)).finally(() => setLoading(false));
