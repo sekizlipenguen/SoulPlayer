@@ -192,14 +192,14 @@ const SoulPlayer = forwardRef((props, ref) => {
 
     const selectQuality = (itemQuality, audioTracks) => {
         setIsLoading(true);
-      if (itemQuality && itemQuality.audioGroupId) {
+        if (itemQuality && itemQuality.audioGroupId) {
             setSelectedAudioTrack({
-              type: itemQuality.audioGroupId,
+                type: itemQuality.audioGroupId,
             });
         }
         setKey(Date.now().toString(), () => {
             setIsSettingsVisible(false, () => {
-              const bandwidth = itemQuality && itemQuality.bandwidth ? itemQuality.bandwidth : 0;
+                const bandwidth = itemQuality && itemQuality.bandwidth ? itemQuality.bandwidth : 0;
                 setSelectedMaxBitRate(parseInt(bandwidth), () => {
                     setTimeout(() => {
                         videoRef.current.seek(currentTime);
