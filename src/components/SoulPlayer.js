@@ -1,5 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {ActivityIndicator, Animated, Dimensions, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {ActivityIndicator, Animated, Dimensions, ImageBackground, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Platform} from 'react-native';
+
 import Slider from '@react-native-community/slider';
 import Video from 'react-native-video';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -8,8 +10,11 @@ import {useStateWithCallback} from '../utils/Helper';
 import TopBar from './TopBar';
 import LinearGradient from 'react-native-linear-gradient';
 
+const platform = Platform.OS;
+
 const SoulPlayer = ({
   videoUrl,
+  videoType = undefined,
   onLoadStart,
   onError,
   onEnd,
@@ -21,12 +26,15 @@ const SoulPlayer = ({
   onFullScreen,
   onPlay,
   onPause,
+  onBackButton,
+  showBackButton = false,
+  paused,
 }) => {
   const videoRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const volumeIconRef = useRef(null);
 
-  const [isPlaying, setIsPlaying] = useStateWithCallback(false);
+  const [isPlaying, setIsPlaying] = useStateWithCallback(paused);
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useStateWithCallback(true);
   const [currentTime, setCurrentTime] = useStateWithCallback(0);
@@ -226,12 +234,14 @@ const SoulPlayer = ({
               }}
               videoUrl={videoUrl}
               currentTime={currentTime}
+              showBackButton={showBackButton}
+              onBackButton={onBackButton}
           />
         </Animated.View>
 
         <Video
             ref={videoRef}
-            source={{uri: videoUrl}}
+            source={{uri: videoUrl, type: videoType}}
             style={styles.video}
             resizeMode="contain"
             paused={!isPlaying}
@@ -289,10 +299,13 @@ const SoulPlayer = ({
                   </View>
               )
           }
-          <LinearGradient
-              colors={['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0.7)']}
+          <ImageBackground
+              source={require('../styles/img/bottom-vignette.png')}
+              imageStyle={{
+                resizeMode: 'stretch',
+              }}
               style={{
-                paddingBottom: isFullscreen ? 30 : 15,
+                paddingBottom: (isFullscreen && platform != 'ios') ? 30 : 15,
                 paddingTop: 15,
                 zIndex: 1,
               }}
@@ -351,7 +364,7 @@ const SoulPlayer = ({
               <Text style={styles.time}>{formatTime(currentTime)}</Text>
               <Text style={styles.time}>{formatTime(duration)}</Text>
             </View>
-          </LinearGradient>
+          </ImageBackground>
         </Animated.View>
 
         <SettingsMenu
