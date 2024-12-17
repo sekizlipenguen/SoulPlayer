@@ -57,6 +57,7 @@ const SoulPlayer = forwardRef((props, ref) => {
 
     const screenWidth = Dimensions.get('window').width;
 
+
     React.useImperativeHandle(ref, () => ({
         getInfo: () => {
             return {
@@ -191,14 +192,14 @@ const SoulPlayer = forwardRef((props, ref) => {
 
     const selectQuality = (itemQuality, audioTracks) => {
         setIsLoading(true);
-        if (itemQuality?.audioGroupId) {
+      if (itemQuality && itemQuality.audioGroupId) {
             setSelectedAudioTrack({
-                type: itemQuality?.audioGroupId,
+              type: itemQuality.audioGroupId,
             });
         }
         setKey(Date.now().toString(), () => {
             setIsSettingsVisible(false, () => {
-                const bandwidth = itemQuality?.bandwidth ?? 0;
+              const bandwidth = itemQuality && itemQuality.bandwidth ? itemQuality.bandwidth : 0;
                 setSelectedMaxBitRate(parseInt(bandwidth), () => {
                     setTimeout(() => {
                         videoRef.current.seek(currentTime);
@@ -269,6 +270,7 @@ const SoulPlayer = forwardRef((props, ref) => {
                 onError={(error) => onError && onError(error)}
                 onEnd={() => onEnd && onEnd()}
                 onSeek={(event) => onSeek && onSeek(event.seekTime)}
+                {...props.videoProps}
             />
 
             {
