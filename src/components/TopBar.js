@@ -92,20 +92,20 @@ const TopBar = ({onResetHideTimer, onFullScreen, showBackButton = false, onBackB
                       enterFullscreen(!isFullscreen);
                     }}
                 >
-                  <Icon name="fullscreen" size={25} color="#fff"/>
+                  <Icon name="fullscreen" size={30} color="#fff"/>
                   <Text style={styles.buttonText}>Tam Ekran</Text>
                 </TouchableOpacity>
 
                     {/* Yansıt Butonu */}
                     <TouchableOpacity
-                        style={styles.button}
+                        style={[styles.button, {marginLeft: 3}]}
                         onPress={() => {
                             onCast();
                             onResetHideTimer();
                         }}
                     >
-                        <Icon name="cast" size={25} color="#fff"/>
-                        <Text style={styles.buttonText}>Yansıt</Text>
+                      <Icon name="cast" size={22} color="#fff"/>
+                      <Text style={[styles.buttonText, {paddingLeft: 5}]}>Yansıt</Text>
                     </TouchableOpacity>
 
                 </View>
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     },
   rightButtons: {
     flexDirection: 'column',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     },
     button: {
         alignItems: 'center',
