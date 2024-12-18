@@ -60,16 +60,41 @@ const TopBar = ({onResetHideTimer, onFullScreen, showBackButton = false, onBackB
                 imageStyle={styles.vignette}
             >
                 <View style={styles.leftButtons}>
-                    {/* Geri Butonu (Props ile kontrol ediliyor) */}
-                    {showBackButton && (
-                        <TouchableOpacity
-                            style={styles.button}
-                            onPress={() => onBackButton && onBackButton()}
-                        >
-                            <Icon name="arrow-back" size={25} color="#fff"/>
-                            <Text style={styles.buttonText}>Geri</Text>
-                        </TouchableOpacity>
-                    )}
+                  {
+                      showBackButton && (
+                          <>
+                            <TouchableOpacity
+                                style={styles.button}
+                                onPress={() => {
+                                  if (isFullscreen) {
+                                    enterFullscreen(false);
+                                  }
+                                  if (onBackButton) {
+                                    onBackButton();
+                                  }
+                                }}
+                            >
+                              <Icon name="arrow-back" size={25} color="#fff"/>
+                              <Text style={styles.buttonText}>Geri</Text>
+                            </TouchableOpacity>
+
+                          </>
+                      )
+                  }
+
+                </View>
+
+              <View style={styles.rightButtons}>
+
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => {
+                      enterFullscreen(!isFullscreen);
+                    }}
+                >
+                  <Icon name="fullscreen" size={25} color="#fff"/>
+                  <Text style={styles.buttonText}>Tam Ekran</Text>
+                </TouchableOpacity>
 
                     {/* Yansıt Butonu */}
                     <TouchableOpacity
@@ -82,18 +107,9 @@ const TopBar = ({onResetHideTimer, onFullScreen, showBackButton = false, onBackB
                         <Icon name="cast" size={25} color="#fff"/>
                         <Text style={styles.buttonText}>Yansıt</Text>
                     </TouchableOpacity>
+
                 </View>
 
-                {/* Tam Ekran Butonu */}
-                <TouchableOpacity
-                    style={styles.button}
-                    onPress={() => {
-                        enterFullscreen(!isFullscreen);
-                    }}
-                >
-                    <Icon name="fullscreen" size={25} color="#fff"/>
-                    <Text style={styles.buttonText}>Tam Ekran</Text>
-                </TouchableOpacity>
             </ImageBackground>
             <CastDeviceModal visible={isCastModalVisible} onClose={closeCastModal} isFullscreen={isFullscreen}/>
         </>
@@ -112,8 +128,13 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
     },
     leftButtons: {
-        flexDirection: 'row',
-        alignItems: 'center',
+      flexDirection: 'column',
+      alignItems: 'flex-end',
+      alignSelf: 'flex-start',
+    },
+  rightButtons: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
     },
     button: {
         alignItems: 'center',
