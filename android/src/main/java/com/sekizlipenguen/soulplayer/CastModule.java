@@ -50,32 +50,79 @@ public class CastModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void scanForCastDevices(Promise promise) {
-        new Handler(Looper.getMainLooper()).post(() -> {
-            try {
-                CastContext castContext = CastContext.getSharedInstance(getReactApplicationContext());
-                SessionManager sessionManager = castContext.getSessionManager();
-                CastSession castSession = sessionManager.getCurrentCastSession();
+public void scanForCastDevices(Promise promise) {
+    new Handler(Looper.getMainLooper()).post(() -> {
+        try {
+            // Google Cast cihazlarını tarama
+            CastContext castContext = CastContext.getSharedInstance(getReactApplicationContext());
+            SessionManager sessionManager = castContext.getSessionManager();
+            CastSession castSession = sessionManager.getCurrentCastSession();
+            Log.d(TAG, "castSession: " + castSession);
 
-                if (castSession != null && castSession.isConnected()) {
-                    RemoteMediaClient remoteMediaClient = castSession.getRemoteMediaClient();
-                    if (remoteMediaClient != null) {
-                        Log.d(TAG, "Google Cast cihazları taranıyor.");
-                        promise.resolve("Google Cast cihazları başarıyla taranıyor.");
-                    } else {
-                        Log.e(TAG, "RemoteMediaClient bulunamadı.");
-                        promise.reject("REMOTE_MEDIA_CLIENT_NULL", "RemoteMediaClient bulunamadı.");
-                    }
+            JSONObject result = new JSONObject();
+
+            if (castSession != null && castSession.isConnected()) {
+                RemoteMediaClient remoteMediaClient = castSession.getRemoteMediaClient();
+                if (remoteMediaClient != null) {
+                    Log.d(TAG, "Google Cast cihazları taranıyor.");
+                    result.put("googleCast", "Google Cast cihazları başarıyla taranıyor.");
                 } else {
-                    Log.e(TAG, "Google Cast cihazı bulunamadı.");
-                    promise.reject("CAST_SESSION_NOT_CONNECTED", "Google Cast cihazı bulunamadı.");
+                    Log.e(TAG, "RemoteMediaClient bulunamadı.");
+                    result.put("googleCastError", "RemoteMediaClient bulunamadı.");
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "Google Cast cihazlarını tararken bir hata oluştu: ", e);
-                promise.reject("ERROR", e.getMessage());
+            } else {
+                Log.e(TAG, "Google Cast cihazı bulunamadı.");
+                result.put("googleCastError", "Google Cast cihazı bulunamadı.");
             }
-        });
-    }
+
+            // AirPlay cihazlarını tarama
+            try {
+                JmDNS jmdns = JmDNS.create(InetAddress.getLocalHost());
+                JSONArray airPlayDevices = new JSONArray();
+
+                jmdns.addServiceListener("_airplay._tcp.local.", new ServiceListener() {
+                    @Override
+                    public void serviceAdded(javax.jmdns.ServiceEvent event) {
+                        Log.d(TAG, "AirPlay cihazı bulundu: " + event.getName());
+                    }
+
+                    @Override
+                    public void serviceRemoved(javax.jmdns.ServiceEvent event) {
+                        Log.d(TAG, "AirPlay cihazı kaldırıldı: " + event.getName());
+                    }
+
+                    @Override
+                    public void serviceResolved(javax.jmdns.ServiceEvent event) {
+                        ServiceInfo info = event.getInfo();
+                        JSONObject device = new JSONObject();
+                        try {
+                            device.put("name", info.getName());
+                            device.put("address", info.getHostAddresses()[0]);
+                            device.put("port", info.getPort());
+                            airPlayDevices.put(device);
+                        } catch (Exception e) {
+                            Log.e(TAG, "AirPlay cihazı JSON oluşturulurken hata oluştu: ", e);
+                        }
+                        Log.d(TAG, "AirPlay cihazı çözüldü: " + info.getName());
+                    }
+                });
+
+                // Tarama sonuçlarını döndür
+                result.put("airPlayDevices", airPlayDevices);
+            } catch (Exception e) {
+                Log.e(TAG, "AirPlay cihazlarını tararken hata oluştu: ", e);
+                result.put("airPlayError", e.getMessage());
+            }
+
+            // Sonuçları promise ile döndür
+            promise.resolve(result.toString());
+        } catch (Exception e) {
+            Log.e(TAG, "Google Cast ve AirPlay cihazlarını tararken bir hata oluştu: ", e);
+            promise.reject("ERROR", e.getMessage());
+        }
+    });
+}
+
 
 
 }

@@ -12,8 +12,6 @@ const TopBar = ({onResetHideTimer, onFullScreen, showBackButton = false, onBackB
     const [isFullscreen, setIsFullscreen] = useStateWithCallback(false);
     const [isCastModalVisible, setCastModalVisible] = useStateWithCallback(false);
 
-  console.log('SoulOrientationModule', SoulOrientationModule);
-  console.log('CastModule', CastModule);
     const enterFullscreen = (status) => {
         StatusBar.setHidden(status, 'slide');
         if (status) {
