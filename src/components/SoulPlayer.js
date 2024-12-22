@@ -41,7 +41,8 @@ const SoulPlayer = forwardRef((props, ref) => {
     const [currentTime, setCurrentTime] = useStateWithCallback(0);
     const [duration, setDuration] = useStateWithCallback(0);
     const [showControls, setShowControls] = useStateWithCallback(true);
-    const [volume, setVolume] = useState(0.5);
+    const [volume, setVolume] = useState(1);
+
     const [isVolumeBarVisible, setIsVolumeBarVisible] = useState(false);
     const [hideTimeout, setHideTimeout] = useState(null);
     const [volumeBarPosition, setVolumeBarPosition] = useState({left: 0, bottom: 0});
@@ -56,7 +57,6 @@ const SoulPlayer = forwardRef((props, ref) => {
     const [key, setKey] = useStateWithCallback(0);
 
     const screenWidth = Dimensions.get('window').width;
-
 
     React.useImperativeHandle(ref, () => ({
         getInfo: () => {
@@ -124,11 +124,19 @@ const SoulPlayer = forwardRef((props, ref) => {
 
     const showVolumeBar = () => {
         if (volumeIconRef.current) {
+            if (isMuted) {
+                setVolume(0);
+            }
             volumeIconRef.current.measure((fx, fy, width, height, px, py) => {
                 const {height: windowHeight} = Dimensions.get('window');
+
+                const adjustedBottom = Platform.OS === 'ios'
+                    ? windowHeight - py - (height - 145) // iOS için düzenleme
+                    : windowHeight - py; // Android için normal hesaplama
+
                 setVolumeBarPosition({
                     left: px - width,
-                    bottom: windowHeight - py + height + 10,
+                    bottom: adjustedBottom,
                 });
             });
         }
@@ -138,6 +146,10 @@ const SoulPlayer = forwardRef((props, ref) => {
     };
 
     const hideVolumeBar = () => {
+        setVolumeBarPosition({
+            left: -200,
+            bottom: -200,
+        });
         setIsVolumeBarVisible(false);
     };
 
@@ -239,10 +251,18 @@ const SoulPlayer = forwardRef((props, ref) => {
                 <TopBar
                     onResetHideTimer={resetHideTimer}
                     onFullScreen={(status) => {
-                        setIsFullscreen(status, () => {
-                            if (onFullScreen) {
-                                onFullScreen(status);
-                            }
+                        Animated.timing(fadeAnim, {
+                            toValue: 0, // Opaklığı 0 yap
+                            duration: 300,
+                            useNativeDriver: true,
+                        }).start(() => {
+                            setShowControls(false, () => {
+                                setIsFullscreen(status, () => {
+                                    if (onFullScreen) {
+                                        onFullScreen(status);
+                                    }
+                                });
+                            });
                         });
                     }}
                     videoUrl={videoUrl}
@@ -278,41 +298,41 @@ const SoulPlayer = forwardRef((props, ref) => {
                     <ActivityIndicator size="large" color="#fff" style={styles.loader}/>
                 )
             }
-
+            {
+                showControls && isVolumeBarVisible && (
+                    <View
+                        style={[
+                            styles.volumeSliderContainer,
+                            {
+                                left: volumeBarPosition.left,
+                                bottom: volumeBarPosition.bottom,
+                                zIndex: 13,
+                            },
+                        ]}
+                    >
+                        <View style={styles.volumeBackground}/>
+                        <Slider
+                            style={styles.volumeSlider}
+                            step={0.05}
+                            minimumValue={0}
+                            maximumValue={1}
+                            value={volume}
+                            onValueChange={(value) => {
+                                setVolume(value);
+                                resetHideTimer();
+                            }}
+                            minimumTrackTintColor="#00ff00"
+                            maximumTrackTintColor="#fff"
+                            thumbTintColor="#00ff00"
+                        />
+                    </View>
+                )
+            }
             <Animated.View
                 style={[styles.controlsContainer, {opacity: fadeAnim}]}
                 pointerEvents={showControls ? 'auto' : 'none'}
             >
-                {
-                    isVolumeBarVisible && (
-                        <View
-                            style={[
-                                styles.volumeSliderContainer,
-                                {
-                                    left: volumeBarPosition.left,
-                                    bottom: volumeBarPosition.bottom,
-                                    zIndex: 3,
-                                    elevation: 5, // Android için
-                                },
-                            ]}
-                        >
-                            <View style={styles.volumeBackground}/>
-                            <Slider
-                                style={styles.volumeSlider}
-                                minimumValue={0}
-                                maximumValue={1}
-                                value={volume}
-                                onValueChange={(value) => {
-                                    setVolume(value);
-                                    resetHideTimer();
-                                }}
-                                minimumTrackTintColor="#00ff00"
-                                maximumTrackTintColor="#fff"
-                                thumbTintColor="#00ff00"
-                            />
-                        </View>
-                    )
-                }
+
                 <ImageBackground
                     source={require('../styles/img/bottom-vignette.png')}
                     imageStyle={{
@@ -409,7 +429,12 @@ const styles = StyleSheet.create({
         paddingVertical: 0,
     },
     controlButton: {padding: 10},
-    progressBar: {marginLeft: '5%', width: '90%', height: 20, marginBottom: 0},
+    progressBar: {
+        marginLeft: '5%',
+        width: '90%',
+        height: 20,
+        marginBottom: 0,
+    },
     volumeSliderContainer: {
         position: 'absolute',
         alignItems: 'center',
@@ -423,7 +448,11 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.7)',
         borderRadius: 8,
     },
-    volumeSlider: {width: 150, height: 5, transform: [{rotate: '-90deg'}]},
+    volumeSlider: {
+        width: 150,
+        height: 150,
+        transform: [{rotate: '-90deg'}],
+    },
     timeContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',

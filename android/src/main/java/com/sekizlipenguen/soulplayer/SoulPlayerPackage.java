@@ -1,6 +1,5 @@
 package com.sekizlipenguen.soulplayer;
 
-import androidx.annotation.NonNull;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.bridge.NativeModule;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -10,18 +9,18 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class SoulOrientationPackage implements ReactPackage {
-    @NonNull
+public class SoulPlayerPackage implements ReactPackage {
+
     @Override
-    public List<NativeModule> createNativeModules(@NonNull ReactApplicationContext reactContext) {
+    public List<NativeModule> createNativeModules(ReactApplicationContext reactContext) {
         List<NativeModule> modules = new ArrayList<>();
-        modules.add(new SoulOrientationModule(reactContext)); // Modül burada tanımlanmalı
+        modules.add(new CastModule(reactContext)); // CastModule ekleniyor
+        modules.add(new SoulOrientationModule(reactContext)); // SoulOrientationModule ekleniyor
         return modules;
     }
 
-    @NonNull
     @Override
-    public List<ViewManager> createViewManagers(@NonNull ReactApplicationContext reactContext) {
+    public List<ViewManager> createViewManagers(ReactApplicationContext reactContext) {
         return Collections.emptyList(); // ViewManager kullanılmıyor
     }
 }
