@@ -23,7 +23,8 @@ public class MainApplication extends Application implements ReactApplication {
         protected List<ReactPackage> getPackages() {
             return Arrays.<ReactPackage>asList(
                 new MainReactPackage(),
-                new CastPackage() // CastPackage'i burada ekledik
+                new CastPackage(), // CastPackage burada kalıyor
+                new SoulOrientationPackage() // OrientationPackage'i ekliyoruz
             );
         }
 

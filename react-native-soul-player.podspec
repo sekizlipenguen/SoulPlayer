@@ -11,7 +11,7 @@ Pod::Spec.new do |s|
   s.author         = package["author"]
   s.homepage       = package["homepage"]
   s.source         = { :git => "https://github.com/sekizlipenguen/react-native-soul-player.git", :tag => "v#{s.version}" }
-  s.platforms      = { :ios => "11.0" }
+  s.platforms      = { :ios => "13.0" }
 
   # Kaynak dosyalar
   s.source_files   = "ios/**/*.{h,m,swift}"

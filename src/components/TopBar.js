@@ -2,22 +2,24 @@ import React, {useEffect} from 'react';
 import {Dimensions, ImageBackground, NativeModules, StatusBar, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {getStatusBarHeight, useStateWithCallback} from '../utils/Helper';
-import Orientation from 'react-native-orientation-locker';
+
 import CastDeviceModal from '@sekizlipenguen/react-native-soul-player/src/components/CastDeviceModal';
 
-const {CastModule} = NativeModules;
+const {CastModule, SoulOrientationModule} = NativeModules;
 
 const TopBar = ({onResetHideTimer, onFullScreen, showBackButton = false, onBackButton = null}) => {
     const [screenWidth, setScreenWidth] = useStateWithCallback(Dimensions.get('window').width);
     const [isFullscreen, setIsFullscreen] = useStateWithCallback(false);
     const [isCastModalVisible, setCastModalVisible] = useStateWithCallback(false);
 
+  console.log('SoulOrientationModule', SoulOrientationModule);
+  console.log('CastModule', CastModule);
     const enterFullscreen = (status) => {
         StatusBar.setHidden(status, 'slide');
         if (status) {
-            Orientation.lockToLandscape();
+          SoulOrientationModule.lockToLandscape();
         } else {
-            Orientation.lockToPortrait();
+          SoulOrientationModule.lockToPortrait();
         }
         setIsFullscreen(status, () => onFullScreen(status));
     };
