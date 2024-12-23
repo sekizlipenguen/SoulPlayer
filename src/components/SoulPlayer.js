@@ -3,9 +3,8 @@ import {ActivityIndicator, Animated, Dimensions, ImageBackground, Platform, Styl
 
 import Slider from '@react-native-community/slider';
 import Video from 'react-native-video';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import SettingsMenu from './SettingsMenu';
-import {useStateWithCallback} from '../utils/Helper';
+import {Icon, useStateWithCallback} from '../utils/Helper';
 import TopBar from './TopBar';
 
 const platform = Platform.OS;

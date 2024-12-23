@@ -83,7 +83,7 @@ const CastDeviceModal = ({visible, onClose, isFullscreen}) => {
               />
           ) : (
               <View style={styles.noDevicesContainer}>
-                <ActivityIndicator size="small" color="#fff"/>
+                <ActivityIndicator size="small"/>
                 <Text style={styles.noDevices}>Cihaz bulunamadı, taranıyor...</Text>
               </View>
           )}

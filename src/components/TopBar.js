@@ -1,7 +1,6 @@
 import React, {useEffect} from 'react';
 import {Dimensions, ImageBackground, NativeModules, StatusBar, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import {getStatusBarHeight, useStateWithCallback} from '../utils/Helper';
+import {getStatusBarHeight, Icon, useStateWithCallback} from '../utils/Helper';
 
 import CastDeviceModal from '@sekizlipenguen/react-native-soul-player/src/components/CastDeviceModal';
 

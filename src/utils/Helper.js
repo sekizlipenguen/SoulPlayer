@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
-import {Dimensions, Platform, StatusBar} from 'react-native';
+import {Animated, Dimensions, Image, Platform, StatusBar} from 'react-native';
 
 export function useStateWithCallback(initialValue) {
   const [state, setState] = useState(initialValue);
@@ -63,8 +63,6 @@ export function getStatusBarHeight(skipAndroid = false) {
   });
 }
 
-import {Animated} from 'react-native';
-
 /**
  * Fade-in animasyonu
  * @param {Animated.Value} animatedValue - Animasyon yapılacak değer
@@ -96,3 +94,37 @@ export const fadeOut = (animatedValue, onComplete, duration = 300) => {
   });
 };
 
+export const Icon = ({name, size = 30}) => {
+  const iconMap = {
+    'arrow-back': require('../styles/icons/arrow_back.png'),
+    'fullscreen': require('../styles/icons/fullscreen.png'),
+    'fullscreen-exit': require('../styles/icons/fullscreen_exit.png'),
+    'cast': require('../styles/icons/cast.png'),
+    'volume-off': require('../styles/icons/volume_of.png'),
+    'volume-up': require('../styles/icons/volume_up.png'),
+    'replay-10': require('../styles/icons/replay_10.png'),
+    'forward-10': require('../styles/icons/forward_10.png'),
+    'pause': require('../styles/icons/pause.png'),
+    'pause-circle': require('../styles/icons/pause_circle.png'),
+    'play-arrow': require('../styles/icons/play_arrow.png'),
+    'settings': require('../styles/icons/settings.png'),
+  };
+
+  const iconSource = iconMap[name];
+
+  if (!iconSource) {
+    console.warn(`Icon "${name}" not found`);
+    return null;
+  }
+
+  return (
+      <Image
+          source={iconSource}
+          style={{
+            width: size,
+            height: size,
+          }}
+          resizeMode="contain"
+      />
+  );
+};
