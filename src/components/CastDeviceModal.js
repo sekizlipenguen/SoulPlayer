@@ -8,10 +8,42 @@ import {
   ActivityIndicator,
   StyleSheet,
   Platform,
-  NativeModules, StatusBar,
+  NativeModules,
+  StatusBar,
+  PermissionsAndroid,
 } from 'react-native';
 
 const {CastModule} = NativeModules;
+
+async function requestLocationPermission() {
+  if (Platform.OS === 'android') {
+    try {
+      const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Konum İzni Gerekli',
+            message: 'Cihazları tarayabilmek için konum izni vermeniz gerekiyor.',
+            buttonNeutral: 'Daha Sonra Sor',
+            buttonNegative: 'İptal',
+            buttonPositive: 'Tamam',
+          },
+      );
+
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        console.log('Konum izni verildi.');
+        return true;
+      } else {
+        console.log('Konum izni reddedildi.');
+        return false;
+      }
+    } catch (err) {
+      console.warn(err);
+      return false;
+    }
+  } else {
+    return true; // iOS cihazlarda ek bir izin gerekmez
+  }
+}
 
 const CastDeviceModal = ({visible, onClose, isFullscreen}) => {
   const [devices, setDevices] = useState([]);
@@ -19,46 +51,66 @@ const CastDeviceModal = ({visible, onClose, isFullscreen}) => {
   const [intervalId, setIntervalId] = useState(null);
 
   useEffect(() => {
-    if (visible) {
-      StatusBar.setHidden(isFullscreen, 'slide');
-      fetchDevices();
-      const id = setInterval(() => {
-        fetchDevices();
-      }, 10000); // 10 saniyede bir cihazları güncelle
-      setIntervalId(id);
-    } else {
-      if (intervalId) {
-        clearInterval(intervalId);
-        setIntervalId(null);
-      }
-    }
-
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
+    const initialize = async () => {
+      if (visible) {
+        const hasPermission = await requestLocationPermission();
+        if (hasPermission) {
+          StatusBar.setHidden(isFullscreen, 'slide');
+          fetchDevices();
+          const id = setInterval(fetchDevices, 60000); // 15 saniyede bir cihazları güncelle
+          setIntervalId(id);
+        } else {
+          console.log('Konum izni olmadan cihaz taranamaz.');
+        }
+      } else {
+        clearTimer();
       }
     };
 
+    initialize();
+
+    return () => {
+      clearTimer();
+    };
   }, [visible]);
 
-  const fetchDevices = () => {
+  const clearTimer = () => {
+    if (intervalId) {
+      clearInterval(intervalId);
+      setIntervalId(null);
+    }
+  };
+
+  const fetchDevices = async () => {
     setLoading(true);
     if (Platform.OS === 'android') {
-      CastModule.scanForCastDevices().then((routes) => {
-        console.log('routes', routes);
+      try {
+        const routes = await CastModule.scanForDevices(60000); // 15 saniyelik timeout
+        console.log('Tarama sonuçları:', routes);
         const parsedRoutes = JSON.parse(routes);
-        setDevices(parsedRoutes);
-      }).catch((error) => console.error('Error getting routes:', error)).finally(() => setLoading(false));
+
+        const googleCastDevices = parsedRoutes.googleCastDevices || [];
+        const airPlayDevices = parsedRoutes.airPlayDevices || [];
+
+        const allDevices = [...googleCastDevices, ...airPlayDevices];
+        setDevices(allDevices);
+      } catch (error) {
+        console.error('Cihaz tarama hatası:', error);
+      } finally {
+        setLoading(false);
+      }
     } else {
       setLoading(false);
     }
   };
 
-  const selectDevice = (deviceName) => {
-    CastModule.selectRoute(deviceName).then(() => {
-      console.log(`Route selected: ${deviceName}`);
+  const selectDevice = async (device) => {
+    try {
+      console.log(`Seçilen cihaz: ${device.name}`);
       onClose();
-    }).catch((error) => console.error('Error selecting route:', error));
+    } catch (error) {
+      console.error('Cihaz seçme hatası:', error);
+    }
   };
 
   return (
@@ -74,17 +126,20 @@ const CastDeviceModal = ({visible, onClose, isFullscreen}) => {
                   renderItem={({item}) => (
                       <TouchableOpacity
                           style={styles.deviceItem}
-                          onPress={() => selectDevice(item.name)}
+                          onPress={() => selectDevice(item)}
                       >
                         <Text style={styles.deviceName}>{item.name}</Text>
-                        <Text style={styles.deviceDescription}>{item.description}</Text>
+                        <Text style={styles.deviceDescription}>
+                          {item.address}:{item.port}
+                        </Text>
                       </TouchableOpacity>
                   )}
               />
           ) : (
               <View style={styles.noDevicesContainer}>
-                <ActivityIndicator size="small"/>
-                <Text style={styles.noDevices}>Cihaz bulunamadı, taranıyor...</Text>
+                <Text style={styles.noDevices}>
+                  Cihaz bulunamadı. Taranıyor...
+                </Text>
               </View>
           )}
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
