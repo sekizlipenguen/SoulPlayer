@@ -91,8 +91,8 @@ const TopBar = ({onResetHideTimer, onFullScreen, showBackButton = false, onBackB
                       enterFullscreen(!isFullscreen);
                     }}
                 >
-                  <Icon name="fullscreen" size={30} color="#fff"/>
-                  <Text style={styles.buttonText}>Tam Ekran</Text>
+                  <Icon name={isFullscreen ? 'fullscreen-exit' : 'fullscreen'} size={30} color="#fff"/>
+                  <Text style={styles.buttonText}>{isFullscreen ? 'Normal Ekran' : 'Tam Ekran'}</Text>
                 </TouchableOpacity>
 
                     {/* Yansıt Butonu */}
