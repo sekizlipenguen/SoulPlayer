@@ -1,17 +1,6 @@
-import React, {useState, useEffect} from 'react';
-import {
-  View,
-  Text,
-  Modal,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-  StyleSheet,
-  Platform,
-  NativeModules,
-  StatusBar,
-  PermissionsAndroid,
-} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {ActivityIndicator, Alert, FlatList, Modal, NativeModules, PermissionsAndroid, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import Connection from '@sekizlipenguen/connection';
 
 const {CastModule} = NativeModules;
 
@@ -45,7 +34,7 @@ async function requestLocationPermission() {
   }
 }
 
-const CastDeviceModal = ({visible, onClose, isFullscreen}) => {
+const CastDeviceModal = ({visible, onClose, isFullscreen, videoUrl}) => {
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [intervalId, setIntervalId] = useState(null);
@@ -86,9 +75,8 @@ const CastDeviceModal = ({visible, onClose, isFullscreen}) => {
     if (Platform.OS === 'android') {
       try {
         const routes = await CastModule.scanForDevices(60000); // 15 saniyelik timeout
-        console.log('Tarama sonuçları:', routes);
         const parsedRoutes = JSON.parse(routes);
-
+        console.log('Tarama sonuçları:', parsedRoutes);
         const googleCastDevices = parsedRoutes.googleCastDevices || [];
         const airPlayDevices = parsedRoutes.airPlayDevices || [];
 
@@ -107,9 +95,36 @@ const CastDeviceModal = ({visible, onClose, isFullscreen}) => {
   const selectDevice = async (device) => {
     try {
       console.log(`Seçilen cihaz: ${device.name}`);
+      const deviceType = device.port === 7000 ? 'airplay' : 'googlecast';
+      console.log(
+          deviceType,
+          device.address,
+          device.port,
+          videoUrl,
+      );
+
+      const response = await Connection.post('http://192.168.1.75:45102/play', {
+        'Content-Location': 'https://content.jwplatform.com/manifests/vM7nH0Kl.m3u8',
+        'Start-Position': 0,
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Basic iKrtR7dkjfVCb/IKUxSw4VbiUtfvt5Z2g+pRLJX962E=',
+        },
+      });
+      console.log('response', response);
+      /*await CastModule.sendMediaToDevice(
+        deviceType,
+        device.address,
+        device.port,
+        videoUrl,
+      );*/
+
+      Alert.alert('Başarılı', `${device.name} cihazına medya gönderildi.`);
       onClose();
     } catch (error) {
-      console.error('Cihaz seçme hatası:', error);
+      console.error('Medya gönderimi hatası:', error);
+      Alert.alert('Hata', 'Medya gönderimi sırasında bir hata oluştu.');
     }
   };
 
@@ -122,7 +137,7 @@ const CastDeviceModal = ({visible, onClose, isFullscreen}) => {
           ) : devices.length > 0 ? (
               <FlatList
                   data={devices}
-                  keyExtractor={(item) => item.name}
+                  keyExtractor={(item, index) => `${item.name}_${item.address}_${item.port}_${index}`}
                   renderItem={({item}) => (
                       <TouchableOpacity
                           style={styles.deviceItem}
