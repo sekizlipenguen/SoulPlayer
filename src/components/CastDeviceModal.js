@@ -1,6 +1,18 @@
 import React, {useEffect, useState} from 'react';
-import {ActivityIndicator, Alert, FlatList, Modal, NativeModules, PermissionsAndroid, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import Connection from '@sekizlipenguen/connection';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  NativeModules,
+  PermissionsAndroid,
+  Platform,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 const {CastModule} = NativeModules;
 
@@ -46,7 +58,7 @@ const CastDeviceModal = ({visible, onClose, isFullscreen, videoUrl}) => {
         if (hasPermission) {
           StatusBar.setHidden(isFullscreen, 'slide');
           fetchDevices();
-          const id = setInterval(fetchDevices, 60000); // 15 saniyede bir cihazları güncelle
+          const id = setInterval(fetchDevices, 120000); // Cihazları periyodik olarak tara
           setIntervalId(id);
         } else {
           console.log('Konum izni olmadan cihaz taranamaz.');
@@ -72,22 +84,16 @@ const CastDeviceModal = ({visible, onClose, isFullscreen, videoUrl}) => {
 
   const fetchDevices = async () => {
     setLoading(true);
-    if (Platform.OS === 'android') {
-      try {
-        const routes = await CastModule.scanForDevices(60000); // 15 saniyelik timeout
-        const parsedRoutes = JSON.parse(routes);
-        console.log('Tarama sonuçları:', parsedRoutes);
-        const googleCastDevices = parsedRoutes.googleCastDevices || [];
-        const airPlayDevices = parsedRoutes.airPlayDevices || [];
-
-        const allDevices = [...googleCastDevices, ...airPlayDevices];
-        setDevices(allDevices);
-      } catch (error) {
-        console.error('Cihaz tarama hatası:', error);
-      } finally {
-        setLoading(false);
-      }
-    } else {
+    try {
+      const routes = await CastModule.scanForDevices(30000);
+      const parsedRoutes = JSON.parse(routes);
+      const googleCastDevices = parsedRoutes || [];
+      console.log('Tarama sonuçları:', parsedRoutes);
+      console.log('googleCastDevices:', googleCastDevices);
+      setDevices(googleCastDevices);
+    } catch (error) {
+      console.error('Cihaz tarama hatası:', error);
+    } finally {
       setLoading(false);
     }
   };
@@ -95,30 +101,9 @@ const CastDeviceModal = ({visible, onClose, isFullscreen, videoUrl}) => {
   const selectDevice = async (device) => {
     try {
       console.log(`Seçilen cihaz: ${device.name}`);
-      const deviceType = device.port === 7000 ? 'airplay' : 'googlecast';
-      console.log(
-          deviceType,
-          device.address,
-          device.port,
-          videoUrl,
-      );
-
-      const response = await Connection.post('http://192.168.1.75:45102/play', {
-        'Content-Location': 'https://content.jwplatform.com/manifests/vM7nH0Kl.m3u8',
-        'Start-Position': 0,
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Basic iKrtR7dkjfVCb/IKUxSw4VbiUtfvt5Z2g+pRLJX962E=',
-        },
-      });
-      console.log('response', response);
-      /*await CastModule.sendMediaToDevice(
-        deviceType,
-        device.address,
-        device.port,
-        videoUrl,
-      );*/
+      const result = await CastModule.connectToDevice(device.address);
+      console.log('result', result);
+      await CastModule.sendMediaToDevice(device.address, videoUrl);
 
       Alert.alert('Başarılı', `${device.name} cihazına medya gönderildi.`);
       onClose();
@@ -137,7 +122,7 @@ const CastDeviceModal = ({visible, onClose, isFullscreen, videoUrl}) => {
           ) : devices.length > 0 ? (
               <FlatList
                   data={devices}
-                  keyExtractor={(item, index) => `${item.name}_${item.address}_${item.port}_${index}`}
+                  keyExtractor={(item, index) => `${item.name}_${item.address}`}
                   renderItem={({item}) => (
                       <TouchableOpacity
                           style={styles.deviceItem}

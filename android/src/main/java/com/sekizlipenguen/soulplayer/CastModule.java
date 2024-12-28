@@ -1,5 +1,7 @@
 package com.sekizlipenguen.soulplayer;
 
+import android.content.Context;
+import android.net.wifi.WifiManager;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -10,9 +12,9 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.google.android.gms.cast.framework.CastContext;
 import com.google.android.gms.cast.framework.CastSession;
+import com.google.android.gms.cast.framework.SessionManagerListener;
 import com.google.android.gms.cast.framework.media.RemoteMediaClient;
 import com.google.android.gms.cast.MediaInfo;
-import com.google.android.gms.cast.framework.SessionManagerListener;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -24,8 +26,7 @@ import javax.jmdns.ServiceListener;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Enumeration;
-import android.content.Context;
-import android.net.wifi.WifiManager;
+import android.content.Intent;
 
 public class CastModule extends ReactContextBaseJavaModule {
 
@@ -34,6 +35,7 @@ public class CastModule extends ReactContextBaseJavaModule {
 
     public CastModule(ReactApplicationContext reactContext) {
         super(reactContext);
+        Log.d(TAG, "CastModule initialized.");
     }
 
     @NonNull
@@ -51,13 +53,13 @@ public class CastModule extends ReactContextBaseJavaModule {
                 while (addresses.hasMoreElements()) {
                     InetAddress address = addresses.nextElement();
                     if (!address.isLoopbackAddress() && address.isSiteLocalAddress()) {
-                        Log.d(TAG, "Yerel IP Adresi: " + address.getHostAddress());
+                        Log.d(TAG, "Found local IP address: " + address.getHostAddress());
                         return address;
                     }
                 }
             }
         } catch (Exception e) {
-            Log.e(TAG, "Yerel IP adresi alınırken hata oluştu.", e);
+            Log.e(TAG, "Error while getting local IP address.", e);
         }
         return null;
     }
@@ -71,22 +73,34 @@ public class CastModule extends ReactContextBaseJavaModule {
             try {
                 InetAddress localAddress = getLocalInetAddress();
                 if (localAddress == null) {
-                    Log.e(TAG, "Yerel IP adresi bulunamadı.");
+                    Log.e(TAG, "Local IP address not found.");
                     promise.reject("NETWORK_ERROR", "Local IP address not found.");
                     return;
                 }
 
-                Log.d(TAG, "JmDNS başlatılıyor. Yerel IP: " + localAddress.getHostAddress());
+                WifiManager wifiManager = (WifiManager) getReactApplicationContext().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                if (wifiManager != null) {
+                    multicastLock = wifiManager.createMulticastLock("soulplayer_multicast_lock");
+                    multicastLock.setReferenceCounted(true);
+                    multicastLock.acquire();
+                    Log.d(TAG, "MulticastLock acquired.");
+                } else {
+                    Log.e(TAG, "WifiManager is null. Cannot acquire MulticastLock.");
+                    promise.reject("WIFI_MANAGER_ERROR", "WifiManager is null.");
+                    return;
+                }
+
+                Log.d(TAG, "Starting JmDNS with IP: " + localAddress.getHostAddress());
                 jmdns = JmDNS.create(localAddress);
                 jmdns.addServiceListener("_googlecast._tcp.local.", new ServiceListener() {
                     @Override
                     public void serviceAdded(javax.jmdns.ServiceEvent event) {
-                        Log.d(TAG, "Google Cast cihazı bulundu: " + event.getName());
+                        Log.d(TAG, "Google Cast device added: " + event.getName());
                     }
 
                     @Override
                     public void serviceRemoved(javax.jmdns.ServiceEvent event) {
-                        Log.d(TAG, "Google Cast cihazı kaldırıldı: " + event.getName());
+                        Log.d(TAG, "Google Cast device removed: " + event.getName());
                     }
 
                     @Override
@@ -98,9 +112,9 @@ public class CastModule extends ReactContextBaseJavaModule {
                             device.put("address", info.getHostAddresses()[0]);
                             device.put("port", info.getPort());
                             googleCastDevices.put(device);
-                            Log.d(TAG, "Google Cast cihazı çözüldü: " + device.toString());
+                            Log.d(TAG, "Google Cast device resolved: " + device.toString());
                         } catch (Exception e) {
-                            Log.e(TAG, "Google Cast cihazını JSON'a eklerken hata oluştu.", e);
+                            Log.e(TAG, "Error adding Google Cast device to JSON.", e);
                         }
                     }
                 });
@@ -109,99 +123,147 @@ public class CastModule extends ReactContextBaseJavaModule {
                 jmdns.close();
 
                 promise.resolve(googleCastDevices.toString());
+                Log.d(TAG, "Device scan complete.");
 
             } catch (Exception e) {
-                Log.e(TAG, "Cihazları tararken hata oluştu.", e);
+                Log.e(TAG, "Error during device scan.", e);
                 promise.reject("SCAN_ERROR", e.getMessage());
             } finally {
                 if (multicastLock != null && multicastLock.isHeld()) {
                     multicastLock.release();
+                    Log.d(TAG, "MulticastLock released.");
                 }
             }
         }).start();
     }
 
-    @ReactMethod
-    public void connectToDevice(String deviceAddress, Promise promise) {
+@ReactMethod
+public void connectToDevice(String deviceAddress, Promise promise) {
+    getReactApplicationContext().runOnUiQueueThread(() -> {
         try {
+            Log.d(TAG, "Connecting to device: " + deviceAddress);
+
+            // CastContext'i UI iş parçacığında alın
             CastContext castContext = CastContext.getSharedInstance(getReactApplicationContext());
             CastSession currentSession = castContext.getSessionManager().getCurrentCastSession();
 
-            // Eğer belirtilen cihaz zaten bağlıysa
             if (currentSession != null && currentSession.isConnected()) {
-                String connectedDeviceAddress = currentSession.getCastDevice().getIpAddress();
+                String connectedDeviceAddress = currentSession.getCastDevice().getIpAddress().getHostAddress();
                 if (deviceAddress.equals(connectedDeviceAddress)) {
-                    Log.d(TAG, "Zaten bağlı: " + deviceAddress);
+                    Log.d(TAG, "Already connected to device: " + deviceAddress);
                     promise.resolve("Device already connected: " + deviceAddress);
                     return;
                 } else {
-                    Log.d(TAG, "Başka bir cihaz bağlı: " + connectedDeviceAddress);
-                    promise.reject("DEVICE_ALREADY_CONNECTED", "Another device is connected: " + connectedDeviceAddress);
-                    return;
+                    Log.d(TAG, "Different device connected: " + connectedDeviceAddress);
+                    castContext.getSessionManager().endCurrentSession(true);
                 }
             }
+             // Yeni bir Intent oluştur
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.putExtra("DEVICE_ADDRESS", deviceAddress);
 
-            // Yeni bir cihaz bağlanıyor
-            Log.d(TAG, "Yeni cihaz bağlanıyor: " + deviceAddress);
+            // Yeni oturumu başlat
+            Log.d(TAG, "Starting a new Cast session...");
+            castContext.getSessionManager().startSession(intent);
             castContext.getSessionManager().addSessionManagerListener(new SessionManagerListener<CastSession>() {
                 @Override
+                public void onSessionStarting(CastSession session) {
+                    Log.d(TAG, "Session is starting: " + session);
+                }
+
+                @Override
+                public void onSessionStartFailed(CastSession session, int error) {
+                    Log.e(TAG, "Session start failed with error code: " + error);
+                    promise.reject("SESSION_START_FAILED", "Failed to start session with error code: " + error);
+                }
+
+                @Override
                 public void onSessionStarted(CastSession session, String sessionId) {
-                    if (session.getCastDevice().getIpAddress().equals(deviceAddress)) {
-                        Log.d(TAG, "Cihaz bağlandı: " + deviceAddress);
-                        promise.resolve("Device connected: " + deviceAddress);
-                    }
+                    Log.d(TAG, "Connected to device: " + deviceAddress);
+                    promise.resolve("Device connected: " + deviceAddress);
+                }
+
+                @Override
+                public void onSessionEnding(CastSession session) {
+                    Log.d(TAG, "Session is ending: " + session);
                 }
 
                 @Override
                 public void onSessionEnded(CastSession session, int error) {
-                    Log.e(TAG, "Oturum sonlandırıldı. Hata kodu: " + error);
-                    promise.reject("SESSION_ENDED", "Session ended with error code: " + error);
+                    Log.e(TAG, "Session ended with error code: " + error);
+                }
+
+                @Override
+                public void onSessionResuming(CastSession session, String sessionId) {
+                    Log.d(TAG, "Session is resuming: " + sessionId);
+                }
+
+                @Override
+                public void onSessionResumeFailed(CastSession session, int error) {
+                    Log.e(TAG, "Session resume failed with error code: " + error);
                 }
 
                 @Override
                 public void onSessionResumed(CastSession session, boolean wasSuspended) {
-                    Log.d(TAG, "Oturum yeniden başlatıldı.");
+                    Log.d(TAG, "Session resumed.");
+                }
+
+                @Override
+                public void onSessionSuspended(CastSession session, int reason) {
+                    Log.d(TAG, "Session suspended. Reason: " + reason);
                 }
             }, CastSession.class);
-
-            // Oturumu başlatma işlemi
-            castContext.getSessionManager().startSession();
         } catch (Exception e) {
-            Log.e(TAG, "Cihaza bağlanırken hata oluştu.", e);
+            Log.e(TAG, "Error connecting to device.", e);
             promise.reject("CONNECT_DEVICE_ERROR", e.getMessage());
         }
-    }
+    });
+}
+
 
     @ReactMethod
     public void sendMediaToDevice(String deviceAddress, String mediaUrl, Promise promise) {
-        new Thread(() -> {
+        getReactApplicationContext().runOnUiQueueThread(() -> {
             try {
+                Log.d(TAG, "Sending media to device: " + deviceAddress);
+
+                // CastContext ve mevcut oturum kontrolü
                 CastContext castContext = CastContext.getSharedInstance(getReactApplicationContext());
                 CastSession castSession = castContext.getSessionManager().getCurrentCastSession();
 
-                if (castSession != null && castSession.isConnected() && castSession.getCastDevice().getIpAddress().equals(deviceAddress)) {
-                    RemoteMediaClient remoteMediaClient = castSession.getRemoteMediaClient();
-                    if (remoteMediaClient != null) {
-                        MediaInfo mediaInfo = new MediaInfo.Builder(mediaUrl)
-                                .setContentType("video/mp4")
-                                .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
-                                .build();
+                if (castSession == null || !castSession.isConnected()) {
+                    Log.e(TAG, "No active session. Starting a new session.");
+                    connectToDevice(deviceAddress, promise);
+                    return;
+                }
 
-                        remoteMediaClient.load(mediaInfo, true, 0);
-                        Log.d(TAG, "Medya gönderildi: " + mediaUrl);
-                        promise.resolve("Media started playing on device: " + deviceAddress);
-                    } else {
-                        Log.e(TAG, "RemoteMediaClient is null.");
-                        promise.reject("REMOTE_MEDIA_CLIENT_ERROR", "RemoteMediaClient is null.");
-                    }
+                if (!castSession.getCastDevice().getIpAddress().getHostAddress().equals(deviceAddress)) {
+                    Log.e(TAG, "Device mismatch. Starting new session.");
+                    connectToDevice(deviceAddress, promise);
+                    return;
+                }
+
+                RemoteMediaClient remoteMediaClient = castSession.getRemoteMediaClient();
+                if (remoteMediaClient != null) {
+                    // HLS formatı için uygun MediaInfo
+                    MediaInfo mediaInfo = new MediaInfo.Builder(mediaUrl)
+                            .setContentType("application/x-mpegURL") // HLS içerik türü
+                            .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
+                            .build();
+
+                    // Medya yükleme
+                    remoteMediaClient.load(mediaInfo, true, 0);
+                    Log.d(TAG, "Media sent to device: " + mediaUrl);
+                    promise.resolve("Media started playing on device: " + deviceAddress);
                 } else {
-                    Log.e(TAG, "Cihaz bağlantısı yok veya yanlış cihaz: " + deviceAddress);
-                    promise.reject("CAST_SESSION_ERROR", "No active Cast session or wrong device.");
+                    Log.e(TAG, "RemoteMediaClient is null.");
+                    promise.reject("REMOTE_MEDIA_CLIENT_ERROR", "RemoteMediaClient is null.");
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Medya gönderimi sırasında hata oluştu.", e);
+                Log.e(TAG, "Error sending media to device.", e);
                 promise.reject("SEND_MEDIA_ERROR", e.getMessage());
             }
-        }).start();
+        });
     }
+
 }
