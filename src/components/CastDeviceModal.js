@@ -1,115 +1,62 @@
-import React, {useEffect, useState} from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Modal,
-  NativeModules,
-  PermissionsAndroid,
-  Platform,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, {useEffect, useState, useRef} from 'react';
+import {ActivityIndicator, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {NativeModules} from 'react-native';
 
 const {CastModule} = NativeModules;
 
-async function requestLocationPermission() {
-  if (Platform.OS === 'android') {
-    try {
-      const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: 'Konum İzni Gerekli',
-            message: 'Cihazları tarayabilmek için konum izni vermeniz gerekiyor.',
-            buttonNeutral: 'Daha Sonra Sor',
-            buttonNegative: 'İptal',
-            buttonPositive: 'Tamam',
-          },
-      );
-
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        console.log('Konum izni verildi.');
-        return true;
-      } else {
-        console.log('Konum izni reddedildi.');
-        return false;
-      }
-    } catch (err) {
-      console.warn(err);
-      return false;
-    }
-  } else {
-    return true; // iOS cihazlarda ek bir izin gerekmez
-  }
-}
-
-const CastDeviceModal = ({visible, onClose, isFullscreen, videoUrl}) => {
+const CastDeviceModal = ({visible, onClose}) => {
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [intervalId, setIntervalId] = useState(null);
+  const intervalRef = useRef(null);
 
   useEffect(() => {
-    const initialize = async () => {
-      if (visible) {
-        const hasPermission = await requestLocationPermission();
-        if (hasPermission) {
-          StatusBar.setHidden(isFullscreen, 'slide');
-          fetchDevices();
-          const id = setInterval(fetchDevices, 120000); // Cihazları periyodik olarak tara
-          setIntervalId(id);
-        } else {
-          console.log('Konum izni olmadan cihaz taranamaz.');
-        }
-      } else {
-        clearTimer();
-      }
-    };
-
-    initialize();
+    if (visible) {
+      startDeviceDiscovery();
+    } else {
+      stopDeviceDiscovery();
+    }
 
     return () => {
-      clearTimer();
+      stopDeviceDiscovery();
     };
   }, [visible]);
 
-  const clearTimer = () => {
-    if (intervalId) {
-      clearInterval(intervalId);
-      setIntervalId(null);
+  const startDeviceDiscovery = () => {
+    fetchDevices();
+
+    // Listeyi 10 saniyede bir yenile
+    intervalRef.current = setInterval(fetchDevices, 1000000);
+  };
+
+  const stopDeviceDiscovery = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
   };
 
   const fetchDevices = async () => {
     setLoading(true);
     try {
-      const routes = await CastModule.scanForDevices(30000);
-      const parsedRoutes = JSON.parse(routes);
-      const googleCastDevices = parsedRoutes || [];
-      console.log('Tarama sonuçları:', parsedRoutes);
-      console.log('googleCastDevices:', googleCastDevices);
-      setDevices(googleCastDevices);
+      const result = await CastModule.discoverDevices();
+      const newDevices = JSON.parse(result);
+
+      // Yeni cihazları ekleyip eski cihazları çıkar
+      setDevices((prevDevices) => {
+        const updatedDevices = newDevices.filter((newDevice) =>
+            !prevDevices.find((prevDevice) => prevDevice.id === newDevice.id),
+        );
+        const removedDevices = prevDevices.filter((prevDevice) =>
+            !newDevices.find((newDevice) => newDevice.id === prevDevice.id),
+        );
+        console.log('Yeni cihazlar:', updatedDevices);
+        console.log('Silinen cihazlar:', removedDevices);
+        return newDevices;
+      });
     } catch (error) {
       console.error('Cihaz tarama hatası:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const selectDevice = async (device) => {
-    try {
-      console.log(`Seçilen cihaz: ${device.name}`);
-      const result = await CastModule.connectToDevice(device.address);
-      console.log('result', result);
-      await CastModule.sendMediaToDevice(device.address, videoUrl);
-
-      Alert.alert('Başarılı', `${device.name} cihazına medya gönderildi.`);
-      onClose();
-    } catch (error) {
-      console.error('Medya gönderimi hatası:', error);
-      Alert.alert('Hata', 'Medya gönderimi sırasında bir hata oluştu.');
     }
   };
 
@@ -122,25 +69,16 @@ const CastDeviceModal = ({visible, onClose, isFullscreen, videoUrl}) => {
           ) : devices.length > 0 ? (
               <FlatList
                   data={devices}
-                  keyExtractor={(item, index) => `${item.name}_${item.address}`}
+                  keyExtractor={(item) => item.id}
                   renderItem={({item}) => (
-                      <TouchableOpacity
-                          style={styles.deviceItem}
-                          onPress={() => selectDevice(item)}
-                      >
+                      <TouchableOpacity style={styles.deviceItem}>
                         <Text style={styles.deviceName}>{item.name}</Text>
-                        <Text style={styles.deviceDescription}>
-                          {item.address}:{item.port}
-                        </Text>
+                        <Text style={styles.deviceDescription}>{item.description}</Text>
                       </TouchableOpacity>
                   )}
               />
           ) : (
-              <View style={styles.noDevicesContainer}>
-                <Text style={styles.noDevices}>
-                  Cihaz bulunamadı. Taranıyor...
-                </Text>
-              </View>
+              <Text style={styles.noDevices}>Cihaz bulunamadı. Tekrar deneniyor...</Text>
           )}
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Text style={styles.closeButtonText}>Kapat</Text>
@@ -153,12 +91,12 @@ const CastDeviceModal = ({visible, onClose, isFullscreen, videoUrl}) => {
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 18,
     color: '#fff',
     marginBottom: 20,
   },
@@ -167,24 +105,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
     width: '90%',
-    alignItems: 'center',
   },
   deviceName: {
     fontSize: 16,
-    fontWeight: 'bold',
     color: '#fff',
   },
   deviceDescription: {
     fontSize: 14,
     color: '#ccc',
   },
-  noDevicesContainer: {
-    alignItems: 'center',
-  },
   noDevices: {
     fontSize: 16,
     color: '#fff',
-    marginTop: 20,
   },
   closeButton: {
     marginTop: 20,
