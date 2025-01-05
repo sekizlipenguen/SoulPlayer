@@ -315,6 +315,58 @@ public class CastModule extends ReactContextBaseJavaModule {
         });
     }
 
+    @ReactMethod
+    public void setVolume(double volume, Promise promise) {
+        UiThreadUtil.runOnUiThread(() -> {
+            try {
+                CastSession castSession = CastContext.getSharedInstance(getReactApplicationContext())
+                        .getSessionManager()
+                        .getCurrentCastSession();
+
+                if (castSession != null) {
+                    if (volume >= 0.0 && volume <= 1.0) {
+                        castSession.setVolume(volume);
+                        Log.d(TAG, "Volume set to: " + volume);
+                        promise.resolve("Volume set successfully");
+                    } else {
+                        Log.e(TAG, "Volume out of range. Must be between 0.0 and 1.0");
+                        promise.reject("INVALID_VOLUME", "Volume must be between 0.0 and 1.0");
+                    }
+                } else {
+                    Log.e(TAG, "No active Cast session.");
+                    promise.reject("NO_CAST_SESSION", "No active Cast session.");
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error setting volume", e);
+                promise.reject("ERROR", e.getMessage());
+            }
+        });
+    }
+
+    @ReactMethod
+    public void getVolume(Promise promise) {
+        UiThreadUtil.runOnUiThread(() -> {
+            try {
+                CastSession castSession = CastContext.getSharedInstance(getReactApplicationContext())
+                        .getSessionManager()
+                        .getCurrentCastSession();
+
+                if (castSession != null) {
+                    double volume = castSession.getVolume();
+                    Log.d(TAG, "Current volume: " + volume);
+                    promise.resolve(volume);
+                } else {
+                    Log.e(TAG, "No active Cast session.");
+                    promise.reject("NO_CAST_SESSION", "No active Cast session.");
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error getting volume", e);
+                promise.reject("ERROR", e.getMessage());
+            }
+        });
+    }
+
+
     private void clearPendingMedia() {
         pendingUrl = null;
         pendingTitle = null;
@@ -329,42 +381,42 @@ public class CastModule extends ReactContextBaseJavaModule {
         }
     }
 
-private JSONObject createSessionParams(CastSession session) {
-    JSONObject params = new JSONObject();
-    try {
-        if (session != null) {
-            if (session.getCastDevice() != null) {
-                params.put("deviceName", session.getCastDevice().getFriendlyName());
-                params.put("deviceId", session.getCastDevice().getDeviceId());
-                params.put("deviceModel", session.getCastDevice().getModelName());
-            }
-            params.put("sessionId", session.getSessionId());
-            params.put("isConnected", session.isConnected());
-
-            // currentTime bilgisi ekleniyor
-            RemoteMediaClient remoteMediaClient = session.getRemoteMediaClient();
-            if (remoteMediaClient != null) {
-                Log.d(TAG, "RemoteMediaClient is not null.");
-                Log.d(TAG, "RemoteMediaClient isPlaying: " + remoteMediaClient.isPlaying());
-                Log.d(TAG, "RemoteMediaClient ApproximateStreamPosition: " + remoteMediaClient.getApproximateStreamPosition());
-                Log.d(TAG, "RemoteMediaClient MediaStatus: " + remoteMediaClient.getMediaStatus());
-
-                if (remoteMediaClient.isPlaying()) {
-                    long currentTime = remoteMediaClient.getApproximateStreamPosition();
-                    params.put("currentTime", currentTime / 1000.0); // Saniye cinsine çevir
-                } else {
-                    params.put("currentTime", 0);
+    private JSONObject createSessionParams(CastSession session) {
+        JSONObject params = new JSONObject();
+        try {
+            if (session != null) {
+                if (session.getCastDevice() != null) {
+                    params.put("deviceName", session.getCastDevice().getFriendlyName());
+                    params.put("deviceId", session.getCastDevice().getDeviceId());
+                    params.put("deviceModel", session.getCastDevice().getModelName());
                 }
-            } else {
-                Log.d(TAG, "RemoteMediaClient is null.");
-                params.put("currentTime", 0); // Eğer RemoteMediaClient yoksa 0 olarak ekle
+                params.put("sessionId", session.getSessionId());
+                params.put("isConnected", session.isConnected());
+
+                // currentTime bilgisi ekleniyor
+                RemoteMediaClient remoteMediaClient = session.getRemoteMediaClient();
+                if (remoteMediaClient != null) {
+                    Log.d(TAG, "RemoteMediaClient is not null.");
+                    Log.d(TAG, "RemoteMediaClient isPlaying: " + remoteMediaClient.isPlaying());
+                    Log.d(TAG, "RemoteMediaClient ApproximateStreamPosition: " + remoteMediaClient.getApproximateStreamPosition());
+                    Log.d(TAG, "RemoteMediaClient MediaStatus: " + remoteMediaClient.getMediaStatus());
+
+                    if (remoteMediaClient.isPlaying()) {
+                        long currentTime = remoteMediaClient.getApproximateStreamPosition();
+                        params.put("currentTime", currentTime / 1000.0); // Saniye cinsine çevir
+                    } else {
+                        params.put("currentTime", 0);
+                    }
+                } else {
+                    Log.d(TAG, "RemoteMediaClient is null.");
+                    params.put("currentTime", 0); // Eğer RemoteMediaClient yoksa 0 olarak ekle
+                }
             }
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating session params", e);
         }
-    } catch (JSONException e) {
-        Log.e(TAG, "Error creating session params", e);
+        return params;
     }
-    return params;
-}
 
 
 

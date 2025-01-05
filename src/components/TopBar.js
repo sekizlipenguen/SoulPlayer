@@ -20,6 +20,8 @@ const TopBar = ({
   setIsLoading = null,
   onIsAndroidCastConnected = null,
   onTogglePlayPause,
+  isMuted,
+  volume,
 }) => {
   const [screenWidth, setScreenWidth] = useStateWithCallback(Dimensions.get('window').width);
   const [isFullscreen, setIsFullscreen] = useStateWithCallback(false);
@@ -84,15 +86,19 @@ const TopBar = ({
   }, [isPlaying]);
 
   useEffect(() => {
+    if (isAndroidCastConnected) {
+      CastModule.setVolume(isMuted ? 0 : volume);
+    }
+  }, [isMuted, volume]);
+
+  useEffect(() => {
 
     const onSessionStartingListener = castEventEmitter.addListener('onSessionStarting', () => {
-      console.log('Session starting...');
       setIsLoading(true); // Cihaz seçildiğinde loading başlat
       setIsAndroidCastConnected(true, () => onIsAndroidCastConnected(true));
     });
 
     const onSessionStartedListener = castEventEmitter.addListener('onSessionStarted', () => {
-      console.log('Cast session started');
       onIsAndroidCastConnected(true);
       setIsLoading(false); // Cast başladığında loading kapat
       CastModule.playMedia(

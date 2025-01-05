@@ -72,7 +72,6 @@ const SoulPlayer = forwardRef((props, ref) => {
 
   const togglePlayPause = (paramStatus = null) => {
     const newPlayingState = paramStatus === null ? (!isPlaying) : paramStatus;
-    console.log('newPlayingState', newPlayingState);
     resetHideTimer();
     setIsPlaying(newPlayingState, () => {
       // onPlay veya onPause tetikle
@@ -276,6 +275,8 @@ const SoulPlayer = forwardRef((props, ref) => {
               onIsAndroidCastConnected={(status) => setIsAndroidCastConnected(status)}
               isPlaying={isPlaying}
               onTogglePlayPause={(status) => togglePlayPause(status)}
+              isMuted={isMuted}
+              volume={volume}
           />
         </Animated.View>
 
