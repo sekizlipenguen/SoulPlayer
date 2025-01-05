@@ -100,6 +100,7 @@ export const Icon = ({name, size = 30}) => {
     'fullscreen': require('../styles/icons/fullscreen.png'),
     'fullscreen-exit': require('../styles/icons/fullscreen_exit.png'),
     'cast': require('../styles/icons/cast.png'),
+    'cast-connected': require('../styles/icons/cast_connected.png'),
     'volume-off': require('../styles/icons/volume_of.png'),
     'volume-up': require('../styles/icons/volume_up.png'),
     'replay-10': require('../styles/icons/replay_10.png'),
