@@ -1,10 +1,12 @@
 import React, {useEffect} from 'react';
-import {Dimensions, ImageBackground, NativeModules, StatusBar, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Dimensions, ImageBackground, NativeModules, requireNativeComponent, StatusBar, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {getStatusBarHeight, Icon, useStateWithCallback} from '../utils/Helper';
 
 import CastDeviceModal from '@sekizlipenguen/react-native-soul-player/src/components/CastDeviceModal';
 
 const {CastModule, SoulOrientationModule} = NativeModules;
+// Native MediaRouteButton bileşeni
+const AndroidMediaRouteButton = requireNativeComponent('MediaRouteButton');
 
 const TopBar = ({onResetHideTimer, onFullScreen, showBackButton = false, onBackButton = null}) => {
     const [screenWidth, setScreenWidth] = useStateWithCallback(Dimensions.get('window').width);
@@ -53,6 +55,7 @@ const TopBar = ({onResetHideTimer, onFullScreen, showBackButton = false, onBackB
 
     return (
         <>
+          <AndroidMediaRouteButton style={styles.castButton}/>
             <ImageBackground
                 source={require('../styles/img/top-vignette.png')}
                 style={[styles.container, {width: screenWidth, paddingTop: isFullscreen ? 20 : getStatusBarHeight()}]}
@@ -149,6 +152,10 @@ const styles = StyleSheet.create({
     vignette: {
         resizeMode: 'stretch',
     },
+  castButton: {
+    width: 50,
+    height: 50,
+  },
 });
 
 export default TopBar;
