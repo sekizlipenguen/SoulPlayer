@@ -93,6 +93,7 @@ const TopBar = ({
 
     const onSessionStartedListener = castEventEmitter.addListener('onSessionStarted', () => {
       console.log('Cast session started');
+      onIsAndroidCastConnected(true);
       setIsLoading(false); // Cast başladığında loading kapat
       CastModule.playMedia(
           videoUrl,
@@ -100,7 +101,6 @@ const TopBar = ({
           null,
       );
       CastModule.seekTo(currentTime);
-      onIsAndroidCastConnected(true);
       onTogglePlayPause(true);
     });
 
